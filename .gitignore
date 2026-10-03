@@ -46,3 +46,6 @@ next-env.d.ts
 
 # local file uploads (Phase 7)
 /storage
+
+# git bundles (local backups)
+*.bundle
