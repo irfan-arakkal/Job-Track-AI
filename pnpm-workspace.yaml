@@ -1,0 +1,9 @@
+# pnpm only runs install scripts for packages listed here (supply-chain safety).
+onlyBuiltDependencies:
+  - "@prisma/engines"
+  - esbuild
+  - prisma
+
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver

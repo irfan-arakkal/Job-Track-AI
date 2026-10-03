@@ -1,0 +1,14 @@
+// JobTrack AI database schema.
+// Models are added in Phase 2 (auth tables) and Phase 3 (domain entities).
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  // The Rust-free, TypeScript-based client introduced in Prisma 7.
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  // The connection URL lives in prisma.config.ts (CLI) and src/server/db.ts (runtime).
+  provider = "postgresql"
+}
