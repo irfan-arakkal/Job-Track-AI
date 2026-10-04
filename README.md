@@ -3,7 +3,7 @@
 A full-stack job application tracker with AI resume analysis, a grounded AI assistant and an
 MCP server — built incrementally as a portfolio project.
 
-**Status:** Phase 14 — security review complete.
+**Status:** Phase 15 — production-ready (Vercel or Docker).
 
 ## Tech stack
 
@@ -98,3 +98,4 @@ docs/                requirements, architecture, database, API, roadmap
 15. [Analytics](docs/15-analytics.md)
 16. [Testing](docs/16-testing.md)
 17. [Security review](docs/17-security.md)
+18. [Deployment](docs/18-deployment.md)

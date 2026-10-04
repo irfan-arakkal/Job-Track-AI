@@ -25,7 +25,8 @@
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset",
     "test:e2e": "playwright test",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "db:deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
