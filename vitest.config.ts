@@ -18,6 +18,17 @@ export default defineConfig({
     },
   },
   test: {
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: [
+        "src/generated/**",
+        "src/components/ui/**",
+        "src/app/**/page.tsx",
+        "src/app/**/layout.tsx",
+      ],
+      reporter: ["text-summary", "html"],
+    },
     projects: [
       {
         extends: true,

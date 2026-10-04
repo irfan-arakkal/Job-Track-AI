@@ -49,3 +49,9 @@ next-env.d.ts
 
 # git bundles (local backups)
 *.bundle
+
+# playwright
+/test-results
+/playwright-report
+/tests/e2e/.auth
+/storage-e2e

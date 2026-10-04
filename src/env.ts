@@ -12,6 +12,10 @@ import { z } from "zod";
  * - Import `env` from here instead of reading `process.env` directly in app code.
  * - Only variables prefixed with NEXT_PUBLIC_ are ever exposed to the browser.
  */
+/** Optional variables: an empty value (`KEY=""`) means "not set", not "invalid". */
+const optional = <T extends z.ZodType>(schema: T) =>
+  z.preprocess((value) => (value === "" ? undefined : value), schema.optional());
+
 const serverEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/, error: "must be a postgresql:// URL" }),
@@ -22,18 +26,18 @@ const serverEnvSchema = z.object({
   // File storage for resumes: a private local folder in development, S3/R2 in production.
   STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),
   STORAGE_LOCAL_DIR: z.string().default("./storage"),
-  S3_BUCKET: z.string().optional(),
+  S3_BUCKET: optional(z.string()),
   S3_REGION: z.string().default("auto"),
-  S3_ENDPOINT: z.url().optional(),
-  S3_ACCESS_KEY_ID: z.string().optional(),
-  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  S3_ENDPOINT: optional(z.url()),
+  S3_ACCESS_KEY_ID: optional(z.string()),
+  S3_SECRET_ACCESS_KEY: optional(z.string()),
 
   // AI (Phase 8+). Optional: without a key the app works and AI features explain how to enable them.
-  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  ANTHROPIC_API_KEY: optional(z.string().min(1)),
   ANTHROPIC_MODEL: z.string().default("claude-opus-5-5"),
 
   // Protects the scheduled reminders job (Phase 11). Vercel Cron sends it as a Bearer token.
-  CRON_SECRET: z.string().min(16).optional(),
+  CRON_SECRET: optional(z.string().min(16)),
 });
 
 const parsed = serverEnvSchema.safeParse(process.env);
