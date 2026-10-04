@@ -16,12 +16,13 @@ RUN pnpm install --frozen-lockfile
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
 # Build-time placeholders: env.ts validates shapes at build time, but no queries run during the
-# build. Real values are provided at runtime.
-ENV DATABASE_URL="postgresql://build:build@localhost:5432/build" \
+# build. They're set only for this command (not ENV), so they never end up in the image config.
+# Real values are provided at runtime.
+RUN DATABASE_URL="postgresql://build:build@localhost:5432/build" \
     BETTER_AUTH_SECRET="build-time-placeholder-secret-not-used-at-runtime" \
-    NEXT_TELEMETRY_DISABLED=1
-RUN pnpm db:generate && pnpm build
+    sh -c "pnpm db:generate && pnpm build"
 
 # ---- 3. Migration runner (has the Prisma CLI): `docker compose run --rm migrate` ----
 FROM base AS migrate
