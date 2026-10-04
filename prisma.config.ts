@@ -7,6 +7,8 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    // `pnpm db:seed` runs this to load the demo account and sample data.
+    seed: "tsx prisma/seed.ts",
   },
   datasource: {
     // Read directly (not via `env()`) so `prisma generate` still works on a fresh

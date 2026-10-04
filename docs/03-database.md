@@ -1,7 +1,11 @@
 # 03 — Database Design
 
-PostgreSQL, accessed only through Prisma. This is the _initial_ design; it is implemented in
-Phase 3 and may be refined as features land.
+PostgreSQL, accessed only through Prisma. The source of truth is `prisma/schema.prisma`.
+
+**Implementation status:** the auth tables (Phase 2) and User, Company, Application,
+StatusChange, Interview, Note and Resume (Phase 3) are built. `ResumeAnalysis` (Phase 8),
+`Reminder` (Phase 11) and `ApiToken` (Phase 10) arrive with their features. See
+[§7 Phase 3 implementation notes](#7-phase-3-implementation-notes).
 
 ## 1. Entities
 
@@ -216,3 +220,73 @@ All timestamps are stored in UTC; the UI converts using the user's timezone.
 - **Interview rate** — applications that ever reached `INTERVIEW` ÷ applied.
 - **Offer / rejection rate** — reached `OFFER` (or `ACCEPTED`) / `REJECTED` ÷ applied.
 - **No-response candidate** — status `APPLIED`, `appliedAt` ≥ 7 days ago, no later status change.
+
+## 7. Phase 3 implementation notes
+
+### Composite foreign keys — the database enforces ownership too
+
+A normal foreign key only checks that the parent row _exists_. If `applications.companyId`
+pointed at `companies.id` alone, a bug in our code could link Alice's application to Bob's
+company. Instead, child tables reference the parent by **(id, userId)**:
+
+```sql
+FOREIGN KEY ("companyId", "userId")     REFERENCES "companies"("id", "userId")      -- applications
+FOREIGN KEY ("applicationId", "userId") REFERENCES "applications"("id", "userId")   -- interviews, notes
+```
+
+So the pair must exist together: the parent has to belong to the **same user**. Prisma even fills
+in `userId` automatically for nested creates (`application.create({ data: { notes: { create: … } } })`),
+so a child can't end up with a different owner. This is defence in depth: the service layer is the
+first line of defence, and the database refuses whatever slips through.
+
+`Application.resumeId` uses a plain foreign key, because a composite one with `ON DELETE SET NULL`
+would also try to null `userId`. The resume service (Phase 7) checks ownership instead.
+
+### Constraints Prisma can't express
+
+The `domain_entities` migration ends with hand-written `CHECK` constraints:
+
+| Constraint                         | Rule                     |
+| ---------------------------------- | ------------------------ |
+| `applications_salary_non_negative` | salaries are ≥ 0         |
+| `applications_salary_range`        | `salaryMin <= salaryMax` |
+| `interviews_duration_positive`     | duration > 0             |
+| `resumes_size_positive`            | file size > 0            |
+
+Prisma ignores CHECK constraints when it compares the schema to the database, so later migrations
+leave them alone (verified: a diff after adding them is empty).
+
+### One primary resume per user
+
+Declared in the schema with the `partialIndexes` preview feature:
+
+```prisma
+@@unique([userId], map: "resumes_one_primary_per_user", where: { isPrimary: true })
+```
+
+which becomes `CREATE UNIQUE INDEX … ON "resumes"("userId") WHERE ("isPrimary" = true)`.
+The index only contains primary resumes, so it allows any number of non-primary ones.
+
+### Delete behaviour
+
+| When you delete…                | What happens                                                 |
+| ------------------------------- | ------------------------------------------------------------ |
+| a user                          | everything they own is deleted (cascade)                     |
+| an application                  | its interviews, notes and status history are deleted         |
+| a company that applications use | refused (`NO ACTION`); delete or move the applications first |
+| a resume                        | applications keep existing; their `resumeId` becomes `NULL`  |
+
+`NO ACTION` (not `RESTRICT`) is used for companies because Postgres checks it at the end of the
+statement, so deleting a user — which cascades to applications _and_ companies — still succeeds.
+
+### Seed data
+
+`pnpm db:seed` creates `demo@jobtrack.dev` / `demo-password-123` with 8 companies,
+14 applications across every status, consistent status history, 8 interviews (3 upcoming) and
+notes. Dates are relative to today. The script refuses to run in production.
+
+### Tests
+
+`tests/integration/` runs against the separate `jobtrack_test` database:
+`application-access.test.ts` proves users only see their own applications, and
+`schema-constraints.test.ts` proves every constraint above.

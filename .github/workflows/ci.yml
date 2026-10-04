@@ -8,10 +8,28 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+
+    # A real PostgreSQL for the integration tests, like docker-compose.yml locally.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: jobtrack
+          POSTGRES_PASSWORD: jobtrack
+          POSTGRES_DB: jobtrack_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jobtrack -d jobtrack_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
-      # Build-time placeholder: no queries run during `next build`, but src/env.ts validates the shape.
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      DATABASE_URL: postgresql://jobtrack:jobtrack@localhost:5432/jobtrack?schema=public
+      TEST_DATABASE_URL: postgresql://jobtrack:jobtrack@localhost:5432/jobtrack_test?schema=public
       BETTER_AUTH_SECRET: ci-only-placeholder-secret-0123456789abcdef
+
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -23,4 +41,5 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm format:check
+      - run: pnpm test
       - run: pnpm build

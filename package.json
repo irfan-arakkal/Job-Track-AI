@@ -16,8 +16,14 @@
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:migrate": "prisma migrate dev && prisma generate",
+    "db:studio": "prisma studio",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:watch": "vitest",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -53,7 +59,8 @@
     "prisma": "7.10.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "5.0.3"
   },
   "packageManager": "pnpm@10.28.0",
   "engines": {

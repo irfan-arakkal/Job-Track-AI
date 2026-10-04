@@ -1,11 +1,13 @@
 // JobTrack AI database schema.
-// Phase 2: auth tables. Phase 3 adds the domain entities (Company, Application, ...).
+// Phase 2: auth tables. Phase 3: domain entities. See docs/03-database.md for the design.
 // Docs: https://pris.ly/d/prisma-schema
 
 generator client {
   // The Rust-free, TypeScript-based client introduced in Prisma 7.
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  // Lets us declare "one primary resume per user" as a partial unique index (see Resume).
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -25,10 +27,18 @@ model User {
   email         String    @unique
   emailVerified Boolean   @default(false)
   image         String?
+  /// IANA time zone (e.g. "Europe/London") used to display dates. Stored dates are always UTC.
+  timezone      String    @default("UTC")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+
+  companies    Company[]
+  applications Application[]
+  interviews   Interview[]
+  notes        Note[]
+  resumes      Resume[]
 
   @@map("users")
 }
@@ -84,4 +94,190 @@ model Verification {
 
   @@index([identifier])
   @@map("verifications")
+}
+
+// ---------------------------------------------------------------------------
+// Job search domain (Phase 3)
+//
+// Ownership rule: every table below has a `userId`, and every query filters by it.
+// Child rows also point at their parent through a *composite* foreign key
+// (parentId + userId). That makes the database itself refuse a row whose parent
+// belongs to a different user — a safety net under our service-layer checks.
+// ---------------------------------------------------------------------------
+
+enum ApplicationStatus {
+  WISHLIST
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  ACCEPTED
+  REJECTED
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+enum InterviewType {
+  PHONE_SCREEN
+  TECHNICAL
+  BEHAVIORAL
+  SYSTEM_DESIGN
+  ONSITE
+  HR
+  FINAL
+  OTHER
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+  NO_SHOW
+}
+
+/// An employer. Companies are private to each user (not a shared global list).
+model Company {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   @db.VarChar(200)
+  website   String?  @db.VarChar(2048)
+  industry  String?  @db.VarChar(100)
+  location  String?  @db.VarChar(200)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+
+  /// One company name per user ("Acme" can exist for you and for someone else).
+  @@unique([userId, name])
+  /// Target for the composite foreign key from Application.
+  @@unique([id, userId])
+  @@map("companies")
+}
+
+/// A job the user is tracking — the central entity.
+model Application {
+  id             String            @id @default(cuid())
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId      String
+  /// NoAction: a company can't be deleted while applications use it. (Checked at the end of
+  /// the statement, so deleting a user — which cascades to both tables — still works.)
+  company        Company           @relation(fields: [companyId, userId], references: [id, userId], onDelete: NoAction)
+  /// The resume sent for this application. Deleting the resume keeps the application.
+  resumeId       String?
+  resume         Resume?           @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  jobTitle       String            @db.VarChar(200)
+  jobUrl         String?           @db.VarChar(2048)
+  location       String?           @db.VarChar(200)
+  workMode       WorkMode?
+  /// Whole currency units (e.g. 85000). Integers, never floats, for money.
+  salaryMin      Int?
+  salaryMax      Int?
+  /// ISO 4217 code, e.g. "USD", "EUR", "INR".
+  salaryCurrency String?           @db.Char(3)
+  status         ApplicationStatus @default(APPLIED)
+  /// Null while the job is still on the wishlist.
+  appliedAt      DateTime?
+  followUpAt     DateTime?
+  jobDescription String?           @db.Text
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  interviews    Interview[]
+  notes         Note[]
+  statusChanges StatusChange[]
+
+  @@unique([id, userId])
+  @@index([userId, status])
+  @@index([userId, appliedAt])
+  @@index([userId, updatedAt])
+  @@index([companyId])
+  @@index([resumeId])
+  @@map("applications")
+}
+
+/// History row written every time an application's status changes. Powers the timeline and
+/// analytics such as response rate and average response time.
+model StatusChange {
+  id            String             @id @default(cuid())
+  applicationId String
+  application   Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  /// Null for the first entry (when the application was created).
+  fromStatus    ApplicationStatus?
+  toStatus      ApplicationStatus
+  changedAt     DateTime           @default(now())
+
+  @@index([applicationId, changedAt])
+  @@map("status_changes")
+}
+
+model Interview {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicationId   String
+  application     Application     @relation(fields: [applicationId, userId], references: [id, userId], onDelete: Cascade)
+  /// Date and time combined, stored in UTC.
+  scheduledAt     DateTime
+  durationMinutes Int?
+  type            InterviewType   @default(OTHER)
+  status          InterviewStatus @default(SCHEDULED)
+  interviewerName String?         @db.VarChar(200)
+  meetingUrl      String?         @db.VarChar(2048)
+  location        String?         @db.VarChar(200)
+  notes           String?         @db.Text
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([userId, scheduledAt])
+  @@index([applicationId])
+  @@map("interviews")
+}
+
+model Note {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicationId String
+  application   Application @relation(fields: [applicationId, userId], references: [id, userId], onDelete: Cascade)
+  content       String      @db.Text
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([applicationId, createdAt])
+  @@index([userId])
+  @@map("notes")
+}
+
+/// Metadata for an uploaded PDF. The file itself lives in private storage (Phase 7) under
+/// `storageKey`; it is never served from a public URL.
+model Resume {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label            String   @db.VarChar(200)
+  originalFileName String   @db.VarChar(255)
+  storageKey       String   @unique
+  mimeType         String   @db.VarChar(100)
+  sizeBytes        Int
+  isPrimary        Boolean  @default(false)
+  /// Text extracted once at upload, reused by AI analysis (Phase 8).
+  extractedText    String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  applications Application[]
+
+  /// At most one primary resume per user: a unique index that only covers rows where
+  /// isPrimary = true (a Postgres "partial index").
+  @@unique([userId], map: "resumes_one_primary_per_user", where: { isPrimary: true })
+  @@index([userId, createdAt])
+  @@map("resumes")
 }

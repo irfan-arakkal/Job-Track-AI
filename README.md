@@ -3,14 +3,16 @@
 A full-stack job application tracker with AI resume analysis, a grounded AI assistant and an
 MCP server — built incrementally as a portfolio project.
 
-**Status:** Phase 2 — authentication complete (register, login, logout, protected routes).
+**Status:** Phase 3 — database schema, seed data and first tests complete.
 
 ## Tech stack
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · PostgreSQL 16 · Prisma 7 ·
 Zod 4 · Better Auth · shadcn/ui (Radix) · React Hook Form · ESLint · Prettier · Docker Compose · pnpm
 
-Planned: Claude API · MCP TypeScript SDK · Vitest · Playwright
+Testing: Vitest (unit + integration against a real Postgres)
+
+Planned: Claude API · MCP TypeScript SDK · Playwright
 
 ## Local setup
 
@@ -23,6 +25,7 @@ cp .env.example .env        # then set BETTER_AUTH_SECRET (see the comment in th
 pnpm install                # also generates the Prisma client
 pnpm db:up                  # starts PostgreSQL in Docker and waits until healthy
 pnpm db:migrate             # creates the database tables
+pnpm db:seed                # optional: demo account demo@jobtrack.dev / demo-password-123
 pnpm dev                    # http://localhost:3000
 ```
 
@@ -31,16 +34,21 @@ then create an account at <http://localhost:3000/register>.
 
 ## Scripts
 
-| Script             | What it does                                     |
-| ------------------ | ------------------------------------------------ |
-| `pnpm dev`         | Start the dev server (Turbopack)                 |
-| `pnpm build`       | Production build                                 |
-| `pnpm check`       | Typecheck + lint + format check (what CI runs)   |
-| `pnpm format`      | Format all files with Prettier                   |
-| `pnpm db:up/down`  | Start / stop the local Postgres container        |
-| `pnpm db:migrate`  | Create and apply a migration from schema changes |
-| `pnpm db:generate` | Regenerate the typed Prisma client               |
-| `pnpm db:studio`   | Browse the database in Prisma Studio             |
+| Script                  | What it does                                     |
+| ----------------------- | ------------------------------------------------ |
+| `pnpm dev`              | Start the dev server (Turbopack)                 |
+| `pnpm build`            | Production build                                 |
+| `pnpm check`            | Typecheck + lint + format check (what CI runs)   |
+| `pnpm format`           | Format all files with Prettier                   |
+| `pnpm db:up/down`       | Start / stop the local Postgres container        |
+| `pnpm db:migrate`       | Create and apply a migration from schema changes |
+| `pnpm db:generate`      | Regenerate the typed Prisma client               |
+| `pnpm db:studio`        | Browse the database in Prisma Studio             |
+| `pnpm db:seed`          | Load the demo account and sample data            |
+| `pnpm db:reset`         | Drop everything, re-run all migrations           |
+| `pnpm test`             | Run all tests (unit + integration)               |
+| `pnpm test:unit`        | Fast tests, no database                          |
+| `pnpm test:integration` | Tests against the `jobtrack_test` database       |
 
 ## Project structure
 
@@ -61,8 +69,11 @@ src/
   env.ts             Zod-validated environment variables
   lib/               code safe for server and client
   proxy.ts           optimistic route protection
-  server/            server-only code: db client, auth config, session helpers
+  server/            server-only code: db client, auth config, session helpers, services/
   generated/prisma/  generated Prisma client (git-ignored)
+tests/
+  unit/              pure logic (no database)
+  integration/       services + constraints against a real test database
 docs/                requirements, architecture, database, API, roadmap
 ```
 

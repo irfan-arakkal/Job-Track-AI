@@ -7,7 +7,9 @@ import { NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/lib
  * the server (Better Auth + our database hook) re-validates everything it receives.
  */
 
-const email = z.email("Enter a valid email address.").trim().toLowerCase();
+// Trim and lowercase *before* checking the format: autofill and phone keyboards often add a
+// trailing space, which would otherwise make a correct address fail validation.
+const email = z.string().trim().toLowerCase().pipe(z.email("Enter a valid email address."));
 
 export const loginSchema = z.object({
   email,
