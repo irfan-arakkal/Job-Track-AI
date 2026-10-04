@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarPlus, ExternalLink, Pencil } from "lucide-react";
+import { ArrowLeft, CalendarPlus, ExternalLink, Pencil, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -67,6 +67,11 @@ export default async function ApplicationDetailPage({ params }: PageProps<"/appl
         </div>
         <div className="flex flex-wrap gap-2">
           <StatusSelect applicationId={application.id} status={application.status} />
+          <Button asChild variant="outline">
+            <Link href={`/resumes/analyze?applicationId=${application.id}`}>
+              <Sparkles /> Analyse fit
+            </Link>
+          </Button>
           <Button asChild variant="outline">
             <Link href={`/applications/${application.id}/edit`}>
               <Pencil /> Edit

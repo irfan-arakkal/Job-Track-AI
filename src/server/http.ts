@@ -19,6 +19,8 @@ export type ApiErrorCode =
   | "FORBIDDEN"
   | "BAD_REQUEST"
   | "RATE_LIMITED"
+  | "SERVICE_UNAVAILABLE"
+  | "UPSTREAM_ERROR"
   | "INTERNAL_ERROR";
 
 export function apiError(

@@ -27,6 +27,10 @@ const serverEnvSchema = z.object({
   S3_ENDPOINT: z.url().optional(),
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
+
+  // AI (Phase 8+). Optional: without a key the app works and AI features explain how to enable them.
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  ANTHROPIC_MODEL: z.string().default("claude-opus-5-5"),
 });
 
 const parsed = serverEnvSchema.safeParse(process.env);

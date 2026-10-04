@@ -1,8 +1,10 @@
-import { FileText } from "lucide-react";
+import { FileText, Sparkles } from "lucide-react";
+import Link from "next/link";
 import type { Metadata } from "next";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResumeCard } from "@/features/resumes/components/resume-card";
 import { ResumeUpload } from "@/features/resumes/components/resume-upload";
@@ -20,6 +22,13 @@ export default async function ResumesPage() {
       <PageHeader
         title="Resumes"
         description="Keep every version in one place. Your primary resume is used by default for AI analysis."
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/resumes/analyze">
+              <Sparkles /> Analyse with AI
+            </Link>
+          </Button>
+        }
       />
       <div className="grid gap-6">
         <Card>

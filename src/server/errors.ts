@@ -8,7 +8,14 @@ import "server-only";
 export class AppError extends Error {
   constructor(
     message: string,
-    readonly code: "NOT_FOUND" | "VALIDATION_ERROR" | "CONFLICT" | "RATE_LIMITED" | "FORBIDDEN",
+    readonly code:
+      | "NOT_FOUND"
+      | "VALIDATION_ERROR"
+      | "CONFLICT"
+      | "RATE_LIMITED"
+      | "FORBIDDEN"
+      | "SERVICE_UNAVAILABLE"
+      | "UPSTREAM_ERROR",
     readonly status: number,
     readonly details?: unknown,
   ) {

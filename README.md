@@ -3,7 +3,7 @@
 A full-stack job application tracker with AI resume analysis, a grounded AI assistant and an
 MCP server — built incrementally as a portfolio project.
 
-**Status:** Phase 7 — resume management complete.
+**Status:** Phase 8 — AI resume analysis complete.
 
 ## Tech stack
 
@@ -12,7 +12,9 @@ Zod 4 · Better Auth · shadcn/ui (Radix) · React Hook Form · ESLint · Pretti
 
 Testing: Vitest (unit + integration against a real Postgres)
 
-Planned: Claude API · MCP TypeScript SDK · Playwright
+AI: Claude API (Anthropic TypeScript SDK, structured outputs)
+
+Planned: MCP TypeScript SDK · Playwright
 
 ## Local setup
 
@@ -89,3 +91,4 @@ docs/                requirements, architecture, database, API, roadmap
 8. [Dashboard](docs/08-dashboard.md)
 9. [Interviews & time zones](docs/09-interviews.md)
 10. [Resumes & file security](docs/10-resumes.md)
+11. [AI resume analysis](docs/11-ai-analysis.md)

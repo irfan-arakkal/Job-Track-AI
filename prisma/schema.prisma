@@ -39,6 +39,7 @@ model User {
   interviews   Interview[]
   notes        Note[]
   resumes      Resume[]
+  analyses     ResumeAnalysis[]
 
   @@map("users")
 }
@@ -193,6 +194,7 @@ model Application {
   interviews    Interview[]
   notes         Note[]
   statusChanges StatusChange[]
+  analyses      ResumeAnalysis[]
 
   @@unique([id, userId])
   @@index([userId, status])
@@ -274,10 +276,43 @@ model Resume {
   updatedAt        DateTime @updatedAt
 
   applications Application[]
+  analyses     ResumeAnalysis[]
 
+  /// Target for the composite foreign key from ResumeAnalysis.
+  @@unique([id, userId])
   /// At most one primary resume per user: a unique index that only covers rows where
   /// isPrimary = true (a Postgres "partial index").
   @@unique([userId], map: "resumes_one_primary_per_user", where: { isPrimary: true })
   @@index([userId, createdAt])
   @@map("resumes")
+}
+
+// ---------------------------------------------------------------------------
+// AI (Phase 8)
+// ---------------------------------------------------------------------------
+
+/// A validated AI comparison of a resume against a job description.
+model ResumeAnalysis {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId       String
+  resume         Resume       @relation(fields: [resumeId, userId], references: [id, userId], onDelete: Cascade)
+  /// Optional: the application the job description came from. Deleting it keeps the analysis.
+  applicationId  String?
+  application    Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  jobTitle       String?      @db.VarChar(200)
+  jobDescription String       @db.Text
+  /// 0–100, also inside `result`; stored separately for sorting and charts.
+  matchScore     Int
+  /// The full structured result, validated with Zod before it is stored.
+  result         Json
+  /// Which model produced it (may differ from the requested one if a fallback ran).
+  model          String       @db.VarChar(100)
+  createdAt      DateTime     @default(now())
+
+  @@index([userId, createdAt])
+  @@index([resumeId])
+  @@index([applicationId])
+  @@map("resume_analyses")
 }
