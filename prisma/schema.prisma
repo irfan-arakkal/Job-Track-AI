@@ -1,0 +1,414 @@
+// JobTrack AI database schema.
+// Phase 2: auth tables. Phase 3: domain entities. See docs/03-database.md for the design.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  // The Rust-free, TypeScript-based client introduced in Prisma 7.
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  // Lets us declare "one primary resume per user" as a partial unique index (see Resume).
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  // The connection URL lives in prisma.config.ts (CLI) and src/server/db.ts (runtime).
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Authentication (Phase 2)
+// These four models are the tables Better Auth expects. Better Auth creates the
+// IDs itself, hashes passwords, and manages sessions; we only define the shape.
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  /// IANA time zone (e.g. "Europe/London") used to display dates. Stored dates are always UTC.
+  timezone      String    @default("UTC")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  companies    Company[]
+  applications Application[]
+  interviews   Interview[]
+  notes        Note[]
+  resumes      Resume[]
+  analyses     ResumeAnalysis[]
+  apiTokens    ApiToken[]
+  reminders    Reminder[]
+
+  @@map("users")
+}
+
+/// One row per logged-in browser/device. The cookie holds `token`; deleting the
+/// row (logout, expiry) invalidates the cookie immediately.
+model Session {
+  id        String   @id
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// A way to sign in. For email/password, providerId = "credential" and
+/// `password` holds the scrypt hash (never the plain password). OAuth providers
+/// (e.g. GitHub) would add more rows here later.
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+/// Short-lived tokens (email verification, password reset).
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+// ---------------------------------------------------------------------------
+// Job search domain (Phase 3)
+//
+// Ownership rule: every table below has a `userId`, and every query filters by it.
+// Child rows also point at their parent through a *composite* foreign key
+// (parentId + userId). That makes the database itself refuse a row whose parent
+// belongs to a different user — a safety net under our service-layer checks.
+// ---------------------------------------------------------------------------
+
+enum ApplicationStatus {
+  WISHLIST
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  ACCEPTED
+  REJECTED
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+enum InterviewType {
+  PHONE_SCREEN
+  TECHNICAL
+  BEHAVIORAL
+  SYSTEM_DESIGN
+  ONSITE
+  HR
+  FINAL
+  OTHER
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+  NO_SHOW
+}
+
+/// An employer. Companies are private to each user (not a shared global list).
+model Company {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   @db.VarChar(200)
+  website   String?  @db.VarChar(2048)
+  industry  String?  @db.VarChar(100)
+  location  String?  @db.VarChar(200)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+
+  /// One company name per user ("Acme" can exist for you and for someone else).
+  @@unique([userId, name])
+  /// Target for the composite foreign key from Application.
+  @@unique([id, userId])
+  @@map("companies")
+}
+
+/// A job the user is tracking — the central entity.
+model Application {
+  id             String            @id @default(cuid())
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId      String
+  /// NoAction: a company can't be deleted while applications use it. (Checked at the end of
+  /// the statement, so deleting a user — which cascades to both tables — still works.)
+  company        Company           @relation(fields: [companyId, userId], references: [id, userId], onDelete: NoAction)
+  /// The resume sent for this application. Deleting the resume keeps the application.
+  resumeId       String?
+  resume         Resume?           @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  jobTitle       String            @db.VarChar(200)
+  jobUrl         String?           @db.VarChar(2048)
+  location       String?           @db.VarChar(200)
+  workMode       WorkMode?
+  /// Whole currency units (e.g. 85000). Integers, never floats, for money.
+  salaryMin      Int?
+  salaryMax      Int?
+  /// ISO 4217 code, e.g. "USD", "EUR", "INR".
+  salaryCurrency String?           @db.Char(3)
+  status         ApplicationStatus @default(APPLIED)
+  /// Null while the job is still on the wishlist.
+  appliedAt      DateTime?
+  followUpAt     DateTime?
+  jobDescription String?           @db.Text
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  interviews    Interview[]
+  notes         Note[]
+  statusChanges StatusChange[]
+  analyses      ResumeAnalysis[]
+  reminders     Reminder[]
+
+  @@unique([id, userId])
+  @@index([userId, status])
+  @@index([userId, appliedAt])
+  @@index([userId, updatedAt])
+  @@index([companyId])
+  @@index([resumeId])
+  @@map("applications")
+}
+
+/// History row written every time an application's status changes. Powers the timeline and
+/// analytics such as response rate and average response time.
+model StatusChange {
+  id            String             @id @default(cuid())
+  applicationId String
+  application   Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  /// Null for the first entry (when the application was created).
+  fromStatus    ApplicationStatus?
+  toStatus      ApplicationStatus
+  changedAt     DateTime           @default(now())
+
+  @@index([applicationId, changedAt])
+  @@map("status_changes")
+}
+
+model Interview {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicationId   String
+  application     Application     @relation(fields: [applicationId, userId], references: [id, userId], onDelete: Cascade)
+  /// Date and time combined, stored in UTC.
+  scheduledAt     DateTime
+  durationMinutes Int?
+  type            InterviewType   @default(OTHER)
+  status          InterviewStatus @default(SCHEDULED)
+  interviewerName String?         @db.VarChar(200)
+  meetingUrl      String?         @db.VarChar(2048)
+  location        String?         @db.VarChar(200)
+  notes           String?         @db.Text
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  reminders Reminder[]
+
+  @@index([userId, scheduledAt])
+  @@index([applicationId])
+  @@map("interviews")
+}
+
+model Note {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicationId String
+  application   Application @relation(fields: [applicationId, userId], references: [id, userId], onDelete: Cascade)
+  content       String      @db.Text
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([applicationId, createdAt])
+  @@index([userId])
+  @@map("notes")
+}
+
+/// Metadata for an uploaded PDF. The file itself lives in private storage (Phase 7) under
+/// `storageKey`; it is never served from a public URL.
+model Resume {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label            String   @db.VarChar(200)
+  originalFileName String   @db.VarChar(255)
+  storageKey       String   @unique
+  mimeType         String   @db.VarChar(100)
+  sizeBytes        Int
+  isPrimary        Boolean  @default(false)
+  /// Text extracted once at upload, reused by AI analysis (Phase 8).
+  extractedText    String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  applications Application[]
+  analyses     ResumeAnalysis[]
+
+  /// Target for the composite foreign key from ResumeAnalysis.
+  @@unique([id, userId])
+  /// At most one primary resume per user: a unique index that only covers rows where
+  /// isPrimary = true (a Postgres "partial index").
+  @@unique([userId], map: "resumes_one_primary_per_user", where: { isPrimary: true })
+  @@index([userId, createdAt])
+  @@map("resumes")
+}
+
+// ---------------------------------------------------------------------------
+// AI (Phase 8)
+// ---------------------------------------------------------------------------
+
+/// A validated AI comparison of a resume against a job description.
+model ResumeAnalysis {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId       String
+  resume         Resume       @relation(fields: [resumeId, userId], references: [id, userId], onDelete: Cascade)
+  /// Optional: the application the job description came from. Deleting it keeps the analysis.
+  applicationId  String?
+  application    Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  jobTitle       String?      @db.VarChar(200)
+  jobDescription String       @db.Text
+  /// 0–100, also inside `result`; stored separately for sorting and charts.
+  matchScore     Int
+  /// The full structured result, validated with Zod before it is stored.
+  result         Json
+  /// Which model produced it (may differ from the requested one if a fallback ran).
+  model          String       @db.VarChar(100)
+  createdAt      DateTime     @default(now())
+
+  @@index([userId, createdAt])
+  @@index([resumeId])
+  @@index([applicationId])
+  @@map("resume_analyses")
+}
+
+// ---------------------------------------------------------------------------
+// MCP access (Phase 10)
+// ---------------------------------------------------------------------------
+
+/// A personal access token for MCP clients. Only a SHA-256 hash of the token is stored; the
+/// plaintext is shown to the user once, at creation.
+model ApiToken {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String    @db.VarChar(100)
+  /// First characters of the token (e.g. "jt_AbC1") so users can tell tokens apart.
+  prefix     String    @db.VarChar(16)
+  tokenHash  String    @unique @db.Char(64)
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("api_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Reminders (Phase 11)
+// ---------------------------------------------------------------------------
+
+enum ReminderType {
+  NO_RESPONSE
+  FOLLOW_UP
+  INTERVIEW_TODAY
+  INTERVIEW_TOMORROW
+}
+
+enum ReminderStatus {
+  PENDING
+  DONE
+  DISMISSED
+}
+
+/// A reminder generated by rules (see src/lib/reminders.ts). `dedupeKey` makes generation
+/// idempotent: running the job twice never creates duplicates.
+model Reminder {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicationId String?
+  application   Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  interviewId   String?
+  interview     Interview?     @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  type          ReminderType
+  title         String         @db.VarChar(300)
+  dueAt         DateTime
+  status        ReminderStatus @default(PENDING)
+  dedupeKey     String         @unique @db.VarChar(200)
+  /// When the reminder was e-mailed (future: email notifications).
+  notifiedAt    DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([userId, status, dueAt])
+  @@index([applicationId])
+  @@index([interviewId])
+  @@map("reminders")
+}
+
+// ---------------------------------------------------------------------------
+// Rate limiting (Phase 14) — shared counters so limits hold across restarts and
+// multiple server instances (in-memory counters don't).
+// ---------------------------------------------------------------------------
+
+/// Used by Better Auth for sign-in/sign-up limits (`rateLimit.storage = "database"`).
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rate_limits")
+}
+
+/// Fixed-window counters for our own limits (uploads, AI, MCP), see src/server/rate-limit.ts.
+model AppRateLimit {
+  key     String   @id @db.VarChar(200)
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
+  @@map("app_rate_limits")
+}

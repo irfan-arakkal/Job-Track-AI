@@ -1,0 +1,14 @@
+# pnpm only runs install scripts for packages listed here (supply-chain safety).
+onlyBuiltDependencies:
+  - "@prisma/engines"
+  - esbuild
+  - prisma
+
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
+
+# Security overrides for transitive dependencies of the Prisma CLI (see docs/17-security.md).
+overrides:
+  mysql2: ">=3.23.1"
+  deepmerge-ts: ">=8.0.0"

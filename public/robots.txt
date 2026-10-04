@@ -1,0 +1,11 @@
+# The landing page can be indexed; the app itself is private and behind a login.
+User-agent: *
+Allow: /$
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /applications
+Disallow: /interviews
+Disallow: /resumes
+Disallow: /analytics
+Disallow: /assistant
+Disallow: /settings
