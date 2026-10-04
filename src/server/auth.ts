@@ -26,6 +26,14 @@ export const auth = betterAuth({
   // Users, sessions and accounts are stored in our Postgres via Prisma.
   database: prismaAdapter(db, { provider: "postgresql" }),
 
+  user: {
+    // Extra column on our users table that Better Auth should load into the session.
+    // `input: false` means sign-up requests can't set it — it's changed in Settings only.
+    additionalFields: {
+      timezone: { type: "string", defaultValue: "UTC", input: false },
+    },
+  },
+
   emailAndPassword: {
     enabled: true,
     minPasswordLength: PASSWORD_MIN_LENGTH,

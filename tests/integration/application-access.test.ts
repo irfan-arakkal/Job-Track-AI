@@ -33,8 +33,9 @@ describe("application access is scoped to the owner", () => {
     const aliceList = await listApplications(alice.id);
     const bobList = await listApplications(bob.id);
 
-    expect(aliceList.map((a) => a.jobTitle)).toEqual(["Alice's job"]);
-    expect(bobList.map((a) => a.jobTitle)).toEqual(["Bob's job"]);
+    expect(aliceList.items.map((a) => a.jobTitle)).toEqual(["Alice's job"]);
+    expect(bobList.items.map((a) => a.jobTitle)).toEqual(["Bob's job"]);
+    expect(aliceList.total).toBe(1);
   });
 
   it("returns the owner's application by id", async () => {
@@ -61,6 +62,6 @@ describe("application access is scoped to the owner", () => {
   it("returns an empty list for a new user", async () => {
     await twoUsersWithOneApplicationEach();
     const newcomer = await factory.user();
-    expect(await listApplications(newcomer.id)).toEqual([]);
+    expect((await listApplications(newcomer.id)).items).toEqual([]);
   });
 });
