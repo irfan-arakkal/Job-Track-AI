@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { ComingSoon } from "@/components/shared/coming-soon";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TimeZoneForm } from "@/features/settings/components/timezone-form";
+import { listTimeZones } from "@/lib/timezone";
 import { requireUser } from "@/server/session";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -39,6 +41,20 @@ export default async function SettingsPage() {
                 </div>
               ))}
             </dl>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h2>Preferences</h2>
+            </CardTitle>
+            <CardDescription>How dates and times are shown to you.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TimeZoneForm
+              current={user.timezone ?? "UTC"}
+              zones={listTimeZones(user.timezone ?? "UTC")}
+            />
           </CardContent>
         </Card>
         <ComingSoon

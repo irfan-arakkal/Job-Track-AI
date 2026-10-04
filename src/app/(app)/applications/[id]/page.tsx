@@ -1,4 +1,4 @@
-import { ArrowLeft, ExternalLink, Pencil } from "lucide-react";
+import { ArrowLeft, CalendarPlus, ExternalLink, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -11,6 +11,7 @@ import { NotesSection } from "@/features/applications/components/notes-section";
 import { StatusSelect } from "@/features/applications/components/status-select";
 import { StatusTimeline } from "@/features/applications/components/status-timeline";
 import { workModeLabel } from "@/lib/applications";
+import { interviewStatusLabel, interviewTypeLabel } from "@/lib/interviews";
 import { formatDate, formatDateTime, formatSalary } from "@/lib/format";
 import { getApplication } from "@/server/services/applications";
 import { requireUser } from "@/server/session";
@@ -143,17 +144,31 @@ export default async function ApplicationDetailPage({ params }: PageProps<"/appl
               ) : (
                 <ul className="grid gap-3">
                   {application.interviews.map((interview) => (
-                    <li key={interview.id} className="rounded-lg border p-3 text-sm">
-                      <p className="font-medium">
-                        {interview.type.replace(/_/g, " ").toLowerCase()}
-                      </p>
-                      <p className="text-muted-foreground">
-                        {formatDateTime(interview.scheduledAt, user.timezone ?? "UTC")}
-                      </p>
+                    <li key={interview.id}>
+                      <Link
+                        href={`/interviews/${interview.id}/edit`}
+                        className="hover:bg-muted/40 block rounded-lg border p-3 text-sm transition-colors"
+                      >
+                        <p className="font-medium">
+                          {interviewTypeLabel[interview.type]}
+                          <span className="text-muted-foreground font-normal">
+                            {" "}
+                            · {interviewStatusLabel[interview.status]}
+                          </span>
+                        </p>
+                        <p className="text-muted-foreground">
+                          {formatDateTime(interview.scheduledAt, user.timezone ?? "UTC")}
+                        </p>
+                      </Link>
                     </li>
                   ))}
                 </ul>
               )}
+              <Button asChild variant="outline" size="sm" className="mt-4 w-full">
+                <Link href={`/interviews/new?applicationId=${application.id}`}>
+                  <CalendarPlus /> Schedule interview
+                </Link>
+              </Button>
             </CardContent>
           </Card>
 
