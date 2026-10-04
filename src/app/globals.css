@@ -97,3 +97,35 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Minimal typography for assistant replies rendered from Markdown. */
+.prose-chat > * + * {
+  margin-top: 0.5rem;
+}
+.prose-chat ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.prose-chat ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.prose-chat li + li {
+  margin-top: 0.25rem;
+}
+.prose-chat strong {
+  font-weight: 600;
+}
+.prose-chat a {
+  text-decoration: underline;
+}
+.prose-chat table {
+  width: 100%;
+  font-size: 0.8125rem;
+}
+.prose-chat th,
+.prose-chat td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.25rem 0.5rem 0.25rem 0;
+  text-align: left;
+}
