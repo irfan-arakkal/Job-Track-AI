@@ -3,7 +3,7 @@
 A full-stack job application tracker with AI resume analysis, a grounded AI assistant and an
 MCP server — built incrementally as a portfolio project.
 
-**Status:** Phase 6 — interviews complete.
+**Status:** Phase 7 — resume management complete.
 
 ## Tech stack
 
@@ -88,3 +88,4 @@ docs/                requirements, architecture, database, API, roadmap
 7. [Job applications](docs/07-applications.md)
 8. [Dashboard](docs/08-dashboard.md)
 9. [Interviews & time zones](docs/09-interviews.md)
+10. [Resumes & file security](docs/10-resumes.md)

@@ -1,3 +1,4 @@
+import os from "node:os";
 import path from "node:path";
 
 import { config as loadEnv } from "dotenv";
@@ -33,7 +34,13 @@ export default defineConfig({
           include: ["tests/integration/**/*.test.ts"],
           environment: "node",
           // Point the app's db client at the TEST database — never the dev one.
-          env: { DATABASE_URL: testDatabaseUrl ?? "", NODE_ENV: "test" },
+          env: {
+            DATABASE_URL: testDatabaseUrl ?? "",
+            NODE_ENV: "test",
+            // Uploaded files go to a throwaway folder, never the real ./storage.
+            STORAGE_DRIVER: "local",
+            STORAGE_LOCAL_DIR: path.join(os.tmpdir(), "jobtrack-test-storage"),
+          },
           globalSetup: ["tests/support/integration-global-setup.ts"],
           // Tests share one database, so run files one at a time.
           fileParallelism: false,

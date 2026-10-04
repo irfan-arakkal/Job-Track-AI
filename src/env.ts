@@ -18,6 +18,15 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.url().default("http://localhost:3000"),
   BETTER_AUTH_SECRET: z.string().min(32, "must be at least 32 characters"),
   BETTER_AUTH_URL: z.url().default("http://localhost:3000"),
+
+  // File storage for resumes: a private local folder in development, S3/R2 in production.
+  STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),
+  STORAGE_LOCAL_DIR: z.string().default("./storage"),
+  S3_BUCKET: z.string().optional(),
+  S3_REGION: z.string().default("auto"),
+  S3_ENDPOINT: z.url().optional(),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
 });
 
 const parsed = serverEnvSchema.safeParse(process.env);
@@ -38,6 +47,13 @@ if (
   parsed.data.BETTER_AUTH_SECRET.startsWith("replace-me")
 ) {
   throw new Error("BETTER_AUTH_SECRET is still the placeholder from .env.example.");
+}
+
+if (
+  parsed.data.STORAGE_DRIVER === "s3" &&
+  !(parsed.data.S3_BUCKET && parsed.data.S3_ACCESS_KEY_ID && parsed.data.S3_SECRET_ACCESS_KEY)
+) {
+  throw new Error("STORAGE_DRIVER=s3 needs S3_BUCKET, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY.");
 }
 
 export const env = parsed.data;
