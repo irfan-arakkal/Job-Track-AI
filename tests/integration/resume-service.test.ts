@@ -71,6 +71,20 @@ describe("resume service", () => {
     });
   });
 
+  it("refuses uploads with a clear 503 on a serverless host without S3", async () => {
+    const user = await factory.user();
+    process.env.VERCEL = "1";
+    try {
+      await expect(service.uploadResume(user.id, pdf())).rejects.toMatchObject({
+        status: 503,
+        message: "Resume uploads aren't set up on this deployment yet.",
+      });
+    } finally {
+      delete process.env.VERCEL;
+    }
+    expect(await storedFiles(user.id)).toHaveLength(0);
+  });
+
   it("sanitizes file names", () => {
     expect(service.sanitizeFileName("../../etc/passwd")).toBe("passwd");
     expect(service.sanitizeFileName('my "cv"<script>.pdf')).toBe("my _cv__script_.pdf");

@@ -16,7 +16,7 @@ Two supported ways to run JobTrack AI in production:
 
 | Variable                                                                            | Required     | Example / notes                                                                              |
 | ----------------------------------------------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                                                                      | ✅           | Neon **pooled** connection string, `?sslmode=require`                                        |
+| `DATABASE_URL`                                                                      | ✅           | Neon **direct** connection string (pooling off), `?sslmode=require`                          |
 | `BETTER_AUTH_SECRET`                                                                | ✅           | `openssl rand -base64 32` — never reuse the dev value                                        |
 | `BETTER_AUTH_URL`                                                                   | ✅           | `https://your-app.vercel.app` (no trailing slash)                                            |
 | `NEXT_PUBLIC_APP_URL`                                                               | ✅           | same as above                                                                                |
@@ -38,10 +38,15 @@ or with the placeholder auth secret.
 ### 1. Database — Neon
 
 1. Sign up at **neon.tech** → _Create project_ (region close to your Vercel region, PostgreSQL 16).
-2. _Connection details_ → copy the **pooled** connection string (host contains `-pooler`). Keep
-   `?sslmode=require`. This is `DATABASE_URL`.
+2. _Connect_ → turn **Connection pooling off** and copy the **direct** connection string. Keep
+   `?sslmode=require`. This is `DATABASE_URL`. The build runs `prisma migrate deploy`, which needs
+   a direct (session) connection; for a portfolio-sized app the direct connection is also fine at
+   runtime.
 
-### 2. File storage — Cloudflare R2
+### 2. File storage — Cloudflare R2 (optional)
+
+Without a bucket the app still deploys and works; only resume uploads are refused with the clear
+message "Resume uploads aren't set up on this deployment yet." (Vercel's disk is read-only).
 
 1. Cloudflare dashboard → **R2** → _Create bucket_ (e.g. `jobtrack-resumes`). Leave public access **off**.
 2. _Manage R2 API tokens_ → _Create API token_ with **Object Read & Write** on that bucket.

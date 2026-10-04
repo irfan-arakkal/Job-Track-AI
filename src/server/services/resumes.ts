@@ -7,7 +7,7 @@ import { db } from "@/server/db";
 import { AppError, NotFoundError, ValidationError } from "@/server/errors";
 import { logger } from "@/server/logger";
 import { extractPdfText, hasPdfSignature } from "@/server/pdf";
-import { getStorage } from "@/server/storage";
+import { canStoreNewFiles, getStorage } from "@/server/storage";
 
 /*
  * Resume service. Files go to private storage under a random key; the database row holds the
@@ -56,6 +56,13 @@ export async function getResumeForDownload(userId: string, resumeId: string) {
 type UploadInput = { fileName: string; mimeType: string; bytes: Uint8Array; label?: string | null };
 
 export async function uploadResume(userId: string, input: UploadInput) {
+  if (!canStoreNewFiles()) {
+    throw new AppError(
+      "Resume uploads aren't set up on this deployment yet.",
+      "SERVICE_UNAVAILABLE",
+      503,
+    );
+  }
   // 1. Validate everything before touching storage.
   if (input.bytes.byteLength === 0) throw new ValidationError("The file is empty.");
   if (input.bytes.byteLength > RESUME_MAX_BYTES) {

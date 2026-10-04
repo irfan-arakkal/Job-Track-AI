@@ -19,6 +19,14 @@ export interface FileStorage {
 
 let instance: FileStorage | undefined;
 
+/**
+ * Serverless hosts such as Vercel have a read-only, throwaway disk, so the local driver can't
+ * keep uploads there. Callers check this before accepting a new file and show a clear message.
+ */
+export function canStoreNewFiles() {
+  return env.STORAGE_DRIVER === "s3" || !process.env.VERCEL;
+}
+
 export function getStorage(): FileStorage {
   instance ??=
     env.STORAGE_DRIVER === "s3"
