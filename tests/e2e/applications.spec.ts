@@ -53,8 +53,9 @@ test("create application → update status → see it on the dashboard → edit 
   await expect(page.getByRole("heading", { name: `${title} (edited)` })).toBeVisible();
 
   // Delete (with confirmation).
-  await page.getByRole("button", { name: "Delete" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+  // exact: the notes also have "Delete note" buttons.
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page).toHaveURL(/\/applications$/);
   await page.goto(detailUrl);
   await expect(page.getByText("Application not found")).toBeVisible();

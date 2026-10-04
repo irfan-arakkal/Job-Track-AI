@@ -43,7 +43,10 @@ test.describe("authentication", () => {
     await page.getByLabel("Email").fill(USERS.alice.email);
     await page.getByLabel("Password").fill("definitely-wrong");
     await page.getByRole("button", { name: "Log in" }).click();
-    await expect(page.getByRole("alert")).toContainText("Invalid email or password.");
+    // Filter by text: Next.js also renders a (hidden) route-announcer alert region.
+    await expect(
+      page.getByRole("alert").filter({ hasText: "Invalid email or password." }),
+    ).toBeVisible();
     await expect(page).toHaveURL(/\/login$/);
   });
 });

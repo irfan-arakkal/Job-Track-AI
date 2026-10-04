@@ -3,20 +3,18 @@
 A full-stack job application tracker with AI resume analysis, a grounded AI assistant and an
 MCP server — built incrementally as a portfolio project.
 
-**Status:** Phase 12 — analytics complete.
+**Status:** Phase 13 — testing complete (unit, integration, end-to-end).
 
 ## Tech stack
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · PostgreSQL 16 · Prisma 7 ·
 Zod 4 · Better Auth · shadcn/ui (Radix) · React Hook Form · ESLint · Prettier · Docker Compose · pnpm
 
-Testing: Vitest (unit + integration against a real Postgres)
+Testing: Vitest (unit + integration against a real Postgres) · Playwright (end-to-end)
 
 AI: Claude API (Anthropic TypeScript SDK, structured outputs)
 
 MCP: official TypeScript SDK (Streamable HTTP)
-
-Planned: Playwright
 
 ## Local setup
 
@@ -98,3 +96,4 @@ docs/                requirements, architecture, database, API, roadmap
 13. [MCP server](docs/13-mcp.md)
 14. [Follow-up reminders](docs/14-reminders.md)
 15. [Analytics](docs/15-analytics.md)
+16. [Testing](docs/16-testing.md)

@@ -103,7 +103,7 @@ export function HorizontalBarChart({ data }: { data: { name: string; count: numb
             tickLine={false}
             axisLine={false}
             tickFormatter={(value: string) =>
-              value.length > 16 ? `${value.slice(0, 15)}…` : value
+              value.length > 15 ? `${value.slice(0, 14)}…` : value
             }
           />
           <Tooltip

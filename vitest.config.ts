@@ -20,13 +20,10 @@ export default defineConfig({
   test: {
     coverage: {
       provider: "v8",
-      include: ["src/**/*.{ts,tsx}"],
-      exclude: [
-        "src/generated/**",
-        "src/components/ui/**",
-        "src/app/**/page.tsx",
-        "src/app/**/layout.tsx",
-      ],
+      // Business logic only. UI components, pages and route wiring are covered by the
+      // Playwright end-to-end tests instead (tests/e2e).
+      include: ["src/server/**/*.ts", "src/lib/**/*.ts", "src/features/**/schemas.ts"],
+      exclude: ["src/generated/**", "src/server/storage/s3.ts", "src/lib/auth-client.ts"],
       reporter: ["text-summary", "html"],
     },
     projects: [
