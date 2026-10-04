@@ -1,5 +1,5 @@
 // JobTrack AI database schema.
-// Models are added in Phase 2 (auth tables) and Phase 3 (domain entities).
+// Phase 2: auth tables. Phase 3 adds the domain entities (Company, Application, ...).
 // Docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -11,4 +11,77 @@ generator client {
 datasource db {
   // The connection URL lives in prisma.config.ts (CLI) and src/server/db.ts (runtime).
   provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Authentication (Phase 2)
+// These four models are the tables Better Auth expects. Better Auth creates the
+// IDs itself, hashes passwords, and manages sessions; we only define the shape.
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  @@map("users")
+}
+
+/// One row per logged-in browser/device. The cookie holds `token`; deleting the
+/// row (logout, expiry) invalidates the cookie immediately.
+model Session {
+  id        String   @id
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// A way to sign in. For email/password, providerId = "credential" and
+/// `password` holds the scrypt hash (never the plain password). OAuth providers
+/// (e.g. GitHub) would add more rows here later.
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+/// Short-lived tokens (email verification, password reset).
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
 }

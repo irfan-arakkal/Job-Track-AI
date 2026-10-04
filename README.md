@@ -3,14 +3,14 @@
 A full-stack job application tracker with AI resume analysis, a grounded AI assistant and an
 MCP server — built incrementally as a portfolio project.
 
-**Status:** Phase 1 — project setup complete.
+**Status:** Phase 2 — authentication complete (register, login, logout, protected routes).
 
 ## Tech stack
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · PostgreSQL 16 · Prisma 7 ·
-Zod 4 · ESLint · Prettier · Docker Compose · pnpm
+Zod 4 · Better Auth · shadcn/ui (Radix) · React Hook Form · ESLint · Prettier · Docker Compose · pnpm
 
-Planned: Better Auth · Claude API · MCP TypeScript SDK · Vitest · Playwright
+Planned: Claude API · MCP TypeScript SDK · Vitest · Playwright
 
 ## Local setup
 
@@ -19,13 +19,15 @@ Planned: Better Auth · Claude API · MCP TypeScript SDK · Vitest · Playwright
 ```bash
 git clone https://github.com/irfan-arakkal/Job-Track-AI.git
 cd Job-Track-AI
-cp .env.example .env        # default values match docker-compose.yml
+cp .env.example .env        # then set BETTER_AUTH_SECRET (see the comment in the file)
 pnpm install                # also generates the Prisma client
 pnpm db:up                  # starts PostgreSQL in Docker and waits until healthy
+pnpm db:migrate             # creates the database tables
 pnpm dev                    # http://localhost:3000
 ```
 
-Verify: open <http://localhost:3000/api/health> → `{"status":"ok","database":"connected",...}`.
+Verify: open <http://localhost:3000/api/health> → `{"status":"ok","database":"connected",...}`,
+then create an account at <http://localhost:3000/register>.
 
 ## Scripts
 
@@ -47,10 +49,19 @@ prisma/              schema.prisma, migrations
 prisma.config.ts     Prisma CLI config (loads .env)
 docker-compose.yml   local PostgreSQL (+ jobtrack_test database)
 src/
-  app/               routes (pages + API route handlers)
+  app/
+    (auth)/          login + register pages
+    (app)/           signed-in pages (dashboard, applications, ... settings)
+    api/             route handlers: auth, health, v1 REST
+  components/
+    ui/              shadcn-style primitives (Button, Input, Card, ...)
+    layout/          app shell, sidebar, mobile nav, user menu
+    shared/          reusable pieces (PageHeader, FormField, ComingSoon, Logo)
+  features/          feature code (auth forms + schemas, later: applications, ...)
   env.ts             Zod-validated environment variables
   lib/               code safe for server and client
-  server/            server-only code (db client, later: auth, services, AI, MCP)
+  proxy.ts           optimistic route protection
+  server/            server-only code: db client, auth config, session helpers
   generated/prisma/  generated Prisma client (git-ignored)
 docs/                requirements, architecture, database, API, roadmap
 ```
@@ -62,3 +73,4 @@ docs/                requirements, architecture, database, API, roadmap
 3. [Database design & ERD](docs/03-database.md)
 4. [API requirements](docs/04-api.md)
 5. [Development milestones](docs/05-roadmap.md)
+6. [Authentication & authorization](docs/06-authentication.md)

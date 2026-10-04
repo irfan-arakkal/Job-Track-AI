@@ -16,6 +16,8 @@ const serverEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/, error: "must be a postgresql:// URL" }),
   NEXT_PUBLIC_APP_URL: z.url().default("http://localhost:3000"),
+  BETTER_AUTH_SECRET: z.string().min(32, "must be at least 32 characters"),
+  BETTER_AUTH_URL: z.url().default("http://localhost:3000"),
 });
 
 const parsed = serverEnvSchema.safeParse(process.env);
@@ -27,6 +29,15 @@ if (!parsed.success) {
   throw new Error(
     `Invalid environment variables:\n${issues}\nSee .env.example for the expected values.`,
   );
+}
+
+// The .env.example placeholder is long enough to pass validation, so refuse it explicitly in
+// production — shipping a publicly known secret would let anyone forge session cookies.
+if (
+  parsed.data.NODE_ENV === "production" &&
+  parsed.data.BETTER_AUTH_SECRET.startsWith("replace-me")
+) {
+  throw new Error("BETTER_AUTH_SECRET is still the placeholder from .env.example.");
 }
 
 export const env = parsed.data;
