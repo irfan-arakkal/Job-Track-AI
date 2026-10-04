@@ -16,11 +16,27 @@ confirmation** before the next phase starts.
 > Testing is not saved for Phase 13 only: from Phase 3 onward we add small unit/integration
 > tests for the logic we write (especially authorization). Phase 13 fills gaps and adds E2E.
 
-## Phase 1 preview (needs your go-ahead)
+## Status
 
-- Scaffold Next.js + TypeScript + Tailwind + ESLint, add Prettier and pnpm
-- `docker-compose.yml` with Postgres (dev + test databases)
-- Prisma init, Prisma client singleton, a health-check route that queries the DB
-- `src/env.ts` (Zod-validated env vars) and `.env.example`
-- Base folder structure, root layout, placeholder landing page
-- Commands: `pnpm dev`, `pnpm lint`, `pnpm format`, `pnpm db:migrate`
+All phases are complete. Each one has its own document in this folder (06–19), written when the
+phase was built: what was implemented, why, how it works, and how it was verified.
+
+| Phase                         | Doc         |
+| ----------------------------- | ----------- |
+| 0 Requirements & architecture | 01–05       |
+| 1 Setup                       | README · 02 |
+| 2 Authentication              | 06          |
+| 3 Database                    | 03          |
+| 4 Applications                | 07          |
+| 5 Dashboard                   | 08          |
+| 6 Interviews                  | 09          |
+| 7 Resumes                     | 10          |
+| 8 AI analysis                 | 11          |
+| 9 AI assistant                | 12          |
+| 10 MCP server                 | 13          |
+| 11 Reminders                  | 14          |
+| 12 Analytics                  | 15          |
+| 13 Testing                    | 16          |
+| 14 Security                   | 17          |
+| 15 Deployment                 | 18          |
+| 16 Portfolio                  | 19          |
