@@ -31,6 +31,9 @@ const serverEnvSchema = z.object({
   // AI (Phase 8+). Optional: without a key the app works and AI features explain how to enable them.
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
   ANTHROPIC_MODEL: z.string().default("claude-opus-5-5"),
+
+  // Protects the scheduled reminders job (Phase 11). Vercel Cron sends it as a Bearer token.
+  CRON_SECRET: z.string().min(16).optional(),
 });
 
 const parsed = serverEnvSchema.safeParse(process.env);

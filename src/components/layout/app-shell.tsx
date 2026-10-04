@@ -1,3 +1,5 @@
+import { Bell } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { MobileNav } from "@/components/layout/mobile-nav";
@@ -7,11 +9,12 @@ import { Logo } from "@/components/shared/logo";
 
 type AppShellProps = {
   user: { name: string; email: string };
+  pendingReminders: number;
   children: ReactNode;
 };
 
 /** The frame around every signed-in page: sidebar on desktop, top bar with menu on mobile. */
-export function AppShell({ user, children }: AppShellProps) {
+export function AppShell({ user, pendingReminders, children }: AppShellProps) {
   return (
     <div className="flex min-h-full flex-1">
       <aside className="bg-sidebar sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 border-r p-4 lg:flex">
@@ -23,7 +26,19 @@ export function AppShell({ user, children }: AppShellProps) {
         <header className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 flex h-14 items-center gap-2 border-b px-4 backdrop-blur sm:px-6">
           <MobileNav />
           <Logo href="/dashboard" className="lg:hidden" />
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <Link
+              href="/dashboard#reminders"
+              className="hover:bg-accent relative flex size-9 items-center justify-center rounded-md transition-colors"
+              aria-label={`Reminders: ${pendingReminders} pending`}
+            >
+              <Bell className="size-4" aria-hidden />
+              {pendingReminders > 0 ? (
+                <span className="bg-destructive text-destructive-foreground absolute top-1 right-1 flex min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-4 font-semibold">
+                  {pendingReminders > 9 ? "9+" : pendingReminders}
+                </span>
+              ) : null}
+            </Link>
             <UserMenu name={user.name} email={user.email} />
           </div>
         </header>

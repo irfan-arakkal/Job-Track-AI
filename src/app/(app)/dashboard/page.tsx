@@ -18,9 +18,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/features/dashboard/components/stat-card";
 import { StatusBreakdown } from "@/features/dashboard/components/status-breakdown";
+import { ReminderList } from "@/features/reminders/components/reminder-list";
 import { formatDateTime, formatRelativeDays } from "@/lib/format";
 import { interviewTypeLabel } from "@/lib/interviews";
 import { getDashboardData } from "@/server/services/dashboard";
+import { listReminders, syncRemindersForUser } from "@/server/services/reminders";
 import { requireUser } from "@/server/session";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -29,7 +31,9 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const firstName = user.name.split(" ")[0];
   const timeZone = user.timezone ?? "UTC";
-  const data = await getDashboardData(user.id);
+  // Refresh reminders on every visit, so they work even without the scheduled job.
+  await syncRemindersForUser(user.id);
+  const [data, reminders] = await Promise.all([getDashboardData(user.id), listReminders(user.id)]);
   const { totals } = data;
 
   const addButton = (
@@ -91,6 +95,17 @@ export default async function DashboardPage() {
       {/* minmax(0,1fr): grid columns may shrink below their content, so long titles truncate
           instead of pushing the page wider than a phone screen. */}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-5">
+        <Card id="reminders" className="scroll-mt-20 lg:col-span-5">
+          <CardHeader>
+            <CardTitle>
+              <h2>Reminders{reminders.length > 0 ? ` (${reminders.length})` : ""}</h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ReminderList reminders={reminders} />
+          </CardContent>
+        </Card>
+
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>

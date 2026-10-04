@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { countPendingReminders } from "@/server/services/reminders";
 import { requireUser } from "@/server/session";
 
 /**
@@ -11,5 +12,10 @@ import { requireUser } from "@/server/session";
  */
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser();
-  return <AppShell user={{ name: user.name, email: user.email }}>{children}</AppShell>;
+  const pendingReminders = await countPendingReminders(user.id);
+  return (
+    <AppShell user={{ name: user.name, email: user.email }} pendingReminders={pendingReminders}>
+      {children}
+    </AppShell>
+  );
 }

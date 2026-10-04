@@ -22,7 +22,11 @@ export function formatDateTime(value: Date | string, timeZone: string) {
 
 export function formatRelativeDays(value: Date | string, now = new Date()) {
   const days = Math.round((new Date(value).getTime() - now.getTime()) / 86_400_000);
-  return new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(days, "day");
+  const format = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  // Pick a unit people actually use: "in 3 days", "2 months ago", "in 3 years".
+  if (Math.abs(days) < 45) return format.format(days, "day");
+  if (Math.abs(days) < 365) return format.format(Math.round(days / 30), "month");
+  return format.format(Math.round(days / 365), "year");
 }
 
 export function formatSalary(
