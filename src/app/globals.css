@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
-
 /*
  * Design tokens (shadcn/ui naming). Components use semantic names such as bg-card or
  * text-muted-foreground instead of raw colours, so theming and dark mode live in one place.
@@ -29,6 +27,8 @@
   --input: #cbd5e1;
   --ring: #6366f1;
   --sidebar: #f8fafc;
+  /* Data-viz single-series colour (validated reference palette, light step). */
+  --chart-1: #2a78d6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -54,6 +54,7 @@
     --input: #334155;
     --ring: #818cf8;
     --sidebar: #0f172a;
+    --chart-1: #3987e5;
   }
 }
 
@@ -83,6 +84,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-sidebar: var(--sidebar);
+  --color-chart-1: var(--chart-1);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
