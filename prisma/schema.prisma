@@ -40,6 +40,7 @@ model User {
   notes        Note[]
   resumes      Resume[]
   analyses     ResumeAnalysis[]
+  apiTokens    ApiToken[]
 
   @@map("users")
 }
@@ -315,4 +316,27 @@ model ResumeAnalysis {
   @@index([resumeId])
   @@index([applicationId])
   @@map("resume_analyses")
+}
+
+// ---------------------------------------------------------------------------
+// MCP access (Phase 10)
+// ---------------------------------------------------------------------------
+
+/// A personal access token for MCP clients. Only a SHA-256 hash of the token is stored; the
+/// plaintext is shown to the user once, at creation.
+model ApiToken {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String    @db.VarChar(100)
+  /// First characters of the token (e.g. "jt_AbC1") so users can tell tokens apart.
+  prefix     String    @db.VarChar(16)
+  tokenHash  String    @unique @db.Char(64)
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("api_tokens")
 }

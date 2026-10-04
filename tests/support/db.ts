@@ -6,7 +6,7 @@ export async function resetDatabase() {
     throw new Error("Refusing to reset a database whose URL doesn't contain 'test'.");
   }
   await db.$executeRawUnsafe(
-    'TRUNCATE TABLE "users", "sessions", "accounts", "verifications", "companies", "applications", "status_changes", "interviews", "notes", "resumes", "resume_analyses" CASCADE',
+    'TRUNCATE TABLE "users", "sessions", "accounts", "verifications", "companies", "applications", "status_changes", "interviews", "notes", "resumes", "resume_analyses", "api_tokens" CASCADE',
   );
 }
 

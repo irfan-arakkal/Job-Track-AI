@@ -3,7 +3,7 @@
 A full-stack job application tracker with AI resume analysis, a grounded AI assistant and an
 MCP server — built incrementally as a portfolio project.
 
-**Status:** Phase 9 — AI assistant complete.
+**Status:** Phase 10 — MCP server complete.
 
 ## Tech stack
 
@@ -14,7 +14,9 @@ Testing: Vitest (unit + integration against a real Postgres)
 
 AI: Claude API (Anthropic TypeScript SDK, structured outputs)
 
-Planned: MCP TypeScript SDK · Playwright
+MCP: official TypeScript SDK (Streamable HTTP)
+
+Planned: Playwright
 
 ## Local setup
 
@@ -93,3 +95,4 @@ docs/                requirements, architecture, database, API, roadmap
 10. [Resumes & file security](docs/10-resumes.md)
 11. [AI resume analysis](docs/11-ai-analysis.md)
 12. [AI assistant & tools](docs/12-ai-assistant.md)
+13. [MCP server](docs/13-mcp.md)

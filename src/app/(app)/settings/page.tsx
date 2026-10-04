@@ -3,7 +3,10 @@ import type { Metadata } from "next";
 import { ComingSoon } from "@/components/shared/coming-soon";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { env } from "@/env";
+import { ApiTokens } from "@/features/settings/components/api-tokens";
 import { TimeZoneForm } from "@/features/settings/components/timezone-form";
+import { listApiTokens } from "@/server/services/api-tokens";
 import { listTimeZones } from "@/lib/timezone";
 import { requireUser } from "@/server/session";
 
@@ -14,6 +17,7 @@ const dateFormatter = new Intl.DateTimeFormat("en", { dateStyle: "long" });
 export default async function SettingsPage() {
   // Each page asks for the user itself, so data access never depends on the layout having run.
   const user = await requireUser();
+  const tokens = await listApiTokens(user.id);
 
   const details = [
     { label: "Name", value: user.name },
@@ -55,6 +59,17 @@ export default async function SettingsPage() {
               current={user.timezone ?? "UTC"}
               zones={listTimeZones(user.timezone ?? "UTC")}
             />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h2>API tokens (MCP)</h2>
+            </CardTitle>
+            <CardDescription>Connect AI tools to your JobTrack data.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ApiTokens tokens={tokens} mcpUrl={`${env.BETTER_AUTH_URL}/api/mcp`} />
           </CardContent>
         </Card>
         <ComingSoon
