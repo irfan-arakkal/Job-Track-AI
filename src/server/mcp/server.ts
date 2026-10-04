@@ -92,7 +92,7 @@ export async function handleMcpRequest(request: Request) {
   }
 
   try {
-    checkRateLimit(`mcp:${auth.tokenId}`, 120, 60_000); // 120 requests per minute per token
+    await checkRateLimit(`mcp:${auth.tokenId}`, 120, 60_000); // 120 requests per minute per token
   } catch (error) {
     if (error instanceof RateLimitError) {
       return jsonRpcError(429, error.message, { "Retry-After": String(error.retryAfterSeconds) });

@@ -36,7 +36,7 @@ const text = (result: Awaited<ReturnType<Client["callTool"]>>) =>
 describe("MCP server", () => {
   beforeEach(async () => {
     await resetDatabase();
-    resetRateLimits();
+    await resetRateLimits();
   });
   afterEach(async () => {
     await Promise.all(clients.splice(0).map((c) => c.close().catch(() => undefined)));

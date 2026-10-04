@@ -22,6 +22,10 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.url().default("http://localhost:3000"),
   BETTER_AUTH_SECRET: z.string().min(32, "must be at least 32 characters"),
   BETTER_AUTH_URL: z.url().default("http://localhost:3000"),
+  // Which request header holds the real client IP (set by your host's proxy, which overwrites
+  // any value the client sent). Used for rate limiting. Vercel: "x-vercel-forwarded-for";
+  // behind nginx/Fly/Render: usually "x-forwarded-for" or "x-real-ip". Comma-separated.
+  TRUSTED_IP_HEADERS: z.string().default("x-forwarded-for"),
 
   // File storage for resumes: a private local folder in development, S3/R2 in production.
   STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),

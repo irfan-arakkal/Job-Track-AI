@@ -10,7 +10,7 @@ export const maxDuration = 120;
  * The assistant can only read the signed-in user's data (tools are scoped by the session).
  */
 export const POST = withAuth(async ({ request, user }) => {
-  checkRateLimit(`assistant:${user.id}`, 60, 60 * 60 * 1000); // 60 messages per hour
+  await checkRateLimit(`assistant:${user.id}`, 60, 60 * 60 * 1000); // 60 messages per hour
   const { messages } = assistantRequestSchema.parse(await readJson(request));
   const result = await runAssistant(
     { userId: user.id, timeZone: user.timezone ?? "UTC" },

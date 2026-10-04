@@ -9,6 +9,8 @@ import { env } from "@/env";
 import { NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/lib/auth-rules";
 import { siteConfig } from "@/lib/site";
 import { db } from "@/server/db";
+import { logger } from "@/server/logger";
+import { getStorage } from "@/server/storage";
 
 const ONE_DAY_SECONDS = 60 * 60 * 24;
 
@@ -32,6 +34,27 @@ export const auth = betterAuth({
     additionalFields: {
       timezone: { type: "string", defaultValue: "UTC", input: false },
     },
+    // Users can delete their account from Settings (password required, see the form).
+    deleteUser: {
+      enabled: true,
+      // Database rows cascade-delete with the user; uploaded files live outside the database,
+      // so remove them explicitly first.
+      beforeDelete: async (user) => {
+        const resumes = await db.resume.findMany({
+          where: { userId: user.id },
+          select: { storageKey: true },
+        });
+        const storage = getStorage();
+        await Promise.all(
+          resumes.map((r) =>
+            storage
+              .delete(r.storageKey)
+              .catch((error) => logger.error("Failed to delete file", { error })),
+          ),
+        );
+        logger.info("Account deleted", { userId: user.id });
+      },
+    },
   },
 
   emailAndPassword: {
@@ -54,12 +77,22 @@ export const auth = betterAuth({
   // Storage is in-memory for now — Phase 14/15 moves it to shared storage for multi-instance hosting.
   rateLimit: {
     enabled: true,
+    // Counters in Postgres (rate_limits table): shared across instances, survive restarts.
+    storage: "database",
     window: 60,
     max: 100,
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
       "/sign-up/email": { window: 60, max: 3 },
+      "/change-password": { window: 60, max: 5 },
+      "/delete-user": { window: 60, max: 5 },
     },
+  },
+
+  advanced: {
+    // Only trust the IP header our hosting proxy sets; otherwise a client could send a fake
+    // X-Forwarded-For with every request to get a fresh rate-limit bucket each time.
+    ipAddress: { ipAddressHeaders: env.TRUSTED_IP_HEADERS.split(",").map((h) => h.trim()) },
   },
 
   // Server-side validation that Better Auth doesn't do for us: the display name.
@@ -67,6 +100,18 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
+          const name = user.name.trim();
+          if (name.length === 0 || name.length > NAME_MAX_LENGTH) {
+            throw new APIError("BAD_REQUEST", {
+              message: `Name must be between 1 and ${NAME_MAX_LENGTH} characters.`,
+            });
+          }
+          return { data: { ...user, name } };
+        },
+      },
+      update: {
+        before: async (user) => {
+          if (typeof user.name !== "string") return { data: user };
           const name = user.name.trim();
           if (name.length === 0 || name.length > NAME_MAX_LENGTH) {
             throw new APIError("BAD_REQUEST", {

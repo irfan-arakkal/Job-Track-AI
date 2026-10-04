@@ -11,7 +11,7 @@ export const GET = withAuth(async ({ user }) => Response.json(await listResumes(
  * Responses: 201 created · 413 too large · 415 not a PDF · 422 unreadable/limit · 429 rate limited.
  */
 export const POST = withAuth(async ({ request, user }) => {
-  checkRateLimit(`upload:${user.id}`, 10, 60 * 60 * 1000); // 10 uploads per hour
+  await checkRateLimit(`upload:${user.id}`, 10, 60 * 60 * 1000); // 10 uploads per hour
 
   // Reject obviously oversized bodies before reading them into memory.
   const declaredLength = Number(request.headers.get("content-length") ?? 0);

@@ -54,7 +54,7 @@ export async function analyzeResume(
   const jobTitle = request.jobTitle ?? application?.jobTitle ?? null;
 
   // 3. Cost control: limit analyses per user per day (checked after cheap validation).
-  checkRateLimit(`analysis:${userId}`, DAILY_LIMIT, 24 * 60 * 60 * 1000);
+  await checkRateLimit(`analysis:${userId}`, DAILY_LIMIT, 24 * 60 * 60 * 1000);
 
   // 4. Call the AI, then validate its answer before trusting it.
   const { output, model } = await analyzer({

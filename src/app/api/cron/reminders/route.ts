@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 
 import { env } from "@/env";
 import { logger } from "@/server/logger";
+import { pruneRateLimits } from "@/server/rate-limit";
 import { syncAllReminders } from "@/server/services/reminders";
 
 export const maxDuration = 300;
@@ -28,6 +29,12 @@ export async function GET(request: Request) {
   }
   const startedAt = Date.now();
   const result = await syncAllReminders();
-  logger.info("Reminder job finished", { ...result, durationMs: Date.now() - startedAt });
-  return Response.json({ ok: true, ...result });
+  // Housekeeping: drop expired rate-limit windows.
+  const prunedRateLimits = await pruneRateLimits();
+  logger.info("Daily job finished", {
+    ...result,
+    prunedRateLimits,
+    durationMs: Date.now() - startedAt,
+  });
+  return Response.json({ ok: true, ...result, prunedRateLimits });
 }

@@ -387,3 +387,28 @@ model Reminder {
   @@index([interviewId])
   @@map("reminders")
 }
+
+// ---------------------------------------------------------------------------
+// Rate limiting (Phase 14) — shared counters so limits hold across restarts and
+// multiple server instances (in-memory counters don't).
+// ---------------------------------------------------------------------------
+
+/// Used by Better Auth for sign-in/sign-up limits (`rateLimit.storage = "database"`).
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rate_limits")
+}
+
+/// Fixed-window counters for our own limits (uploads, AI, MCP), see src/server/rate-limit.ts.
+model AppRateLimit {
+  key     String   @id @db.VarChar(200)
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
+  @@map("app_rate_limits")
+}

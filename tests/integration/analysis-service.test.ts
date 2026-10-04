@@ -37,7 +37,7 @@ async function userWithResume(
 describe("analyzeResume", () => {
   beforeEach(async () => {
     await resetDatabase();
-    resetRateLimits();
+    await resetRateLimits();
   });
 
   it("uses the primary resume, calls the analyzer and stores the validated result", async () => {

@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 
-import { ComingSoon } from "@/components/shared/coming-soon";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { env } from "@/env";
+import {
+  ChangePasswordForm,
+  DeleteAccount,
+  ProfileForm,
+} from "@/features/settings/components/account-forms";
 import { ApiTokens } from "@/features/settings/components/api-tokens";
 import { TimeZoneForm } from "@/features/settings/components/timezone-form";
 import { listApiTokens } from "@/server/services/api-tokens";
@@ -72,10 +76,37 @@ export default async function SettingsPage() {
             <ApiTokens tokens={tokens} mcpUrl={`${env.BETTER_AUTH_URL}/api/mcp`} />
           </CardContent>
         </Card>
-        <ComingSoon
-          phase={14}
-          description="Editing your profile, changing your password and deleting your account."
-        />
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h2>Edit profile</h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProfileForm name={user.name} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h2>Password</h2>
+            </CardTitle>
+            <CardDescription>Changing it signs out your other devices.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChangePasswordForm />
+          </CardContent>
+        </Card>
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle>
+              <h2>Delete account</h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DeleteAccount />
+          </CardContent>
+        </Card>
       </div>
     </>
   );
