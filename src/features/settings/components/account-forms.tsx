@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { getAuthErrorMessage } from "@/features/auth/errors";
 import { NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/lib/auth-rules";
@@ -92,9 +93,8 @@ export function ChangePasswordForm() {
     >
       <div className="grid gap-2">
         <Label htmlFor="current-password">Current password</Label>
-        <Input
+        <PasswordInput
           id="current-password"
-          type="password"
           autoComplete="current-password"
           value={current}
           onChange={(e) => setCurrent(e.target.value)}
@@ -102,9 +102,8 @@ export function ChangePasswordForm() {
       </div>
       <div className="grid gap-2">
         <Label htmlFor="new-password">New password</Label>
-        <Input
+        <PasswordInput
           id="new-password"
-          type="password"
           autoComplete="new-password"
           maxLength={PASSWORD_MAX_LENGTH}
           value={next}
@@ -168,9 +167,8 @@ export function DeleteAccount() {
             }}
           >
             <Label htmlFor="delete-password">Password</Label>
-            <Input
+            <PasswordInput
               id="delete-password"
-              type="password"
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

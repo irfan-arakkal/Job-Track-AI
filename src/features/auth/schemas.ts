@@ -17,6 +17,17 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Enter your password."),
 });
 
+const newPassword = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH, `Use at least ${PASSWORD_MIN_LENGTH} characters.`)
+  .max(PASSWORD_MAX_LENGTH, `Use at most ${PASSWORD_MAX_LENGTH} characters.`);
+
+const passwordsMatch = {
+  check: (values: { password: string; confirmPassword: string }) =>
+    values.password === values.confirmPassword,
+  params: { message: "Passwords don't match.", path: ["confirmPassword"] },
+};
+
 export const registerSchema = z
   .object({
     name: z
@@ -25,16 +36,18 @@ export const registerSchema = z
       .min(1, "Enter your name.")
       .max(NAME_MAX_LENGTH, `Name must be at most ${NAME_MAX_LENGTH} characters.`),
     email,
-    password: z
-      .string()
-      .min(PASSWORD_MIN_LENGTH, `Use at least ${PASSWORD_MIN_LENGTH} characters.`)
-      .max(PASSWORD_MAX_LENGTH, `Use at most ${PASSWORD_MAX_LENGTH} characters.`),
+    password: newPassword,
     confirmPassword: z.string(),
   })
-  .refine((values) => values.password === values.confirmPassword, {
-    message: "Passwords don't match.",
-    path: ["confirmPassword"],
-  });
+  .refine(passwordsMatch.check, passwordsMatch.params);
+
+export const forgotPasswordSchema = z.object({ email });
+
+export const resetPasswordSchema = z
+  .object({ password: newPassword, confirmPassword: z.string() })
+  .refine(passwordsMatch.check, passwordsMatch.params);
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

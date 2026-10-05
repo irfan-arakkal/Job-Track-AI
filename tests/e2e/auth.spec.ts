@@ -7,7 +7,7 @@ test.describe("authentication", () => {
     await page.goto("/applications?status=OFFER");
     await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fapplications%3Fstatus%3DOFFER/);
     await page.getByLabel("Email").fill(USERS.bob.email);
-    await page.getByLabel("Password").fill(USERS.bob.password);
+    await page.getByLabel("Password", { exact: true }).fill(USERS.bob.password);
     await page.getByRole("button", { name: "Log in" }).click();
     await expect(page).toHaveURL(/\/applications\?status=OFFER$/);
   });
@@ -41,7 +41,7 @@ test.describe("authentication", () => {
   test("shows a generic error for a wrong password", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("Email").fill(USERS.alice.email);
-    await page.getByLabel("Password").fill("definitely-wrong");
+    await page.getByLabel("Password", { exact: true }).fill("definitely-wrong");
     await page.getByRole("button", { name: "Log in" }).click();
     // Filter by text: Next.js also renders a (hidden) route-announcer alert region.
     await expect(

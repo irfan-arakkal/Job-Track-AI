@@ -42,6 +42,12 @@ const serverEnvSchema = z.object({
 
   // Protects the scheduled reminders job (Phase 11). Vercel Cron sends it as a Bearer token.
   CRON_SECRET: optional(z.string().min(16)),
+
+  // Outgoing email (password reset links) via Resend. Optional: without it, password reset links
+  // are printed to the server console in development and the feature is turned off in production.
+  RESEND_API_KEY: optional(z.string().min(1)),
+  // Sender, e.g. "JobTrack AI <noreply@yourdomain.com>" (the domain must be verified in Resend).
+  EMAIL_FROM: optional(z.string().min(3)),
 });
 
 const parsed = serverEnvSchema.safeParse(process.env);

@@ -1,9 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -11,31 +10,49 @@ import { FormField } from "@/components/shared/form-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
 import { getAuthErrorMessage } from "@/features/auth/errors";
-import { loginSchema, type LoginInput } from "@/features/auth/schemas";
+import { forgotPasswordSchema, type ForgotPasswordInput } from "@/features/auth/schemas";
 import { authClient } from "@/lib/auth-client";
 
-export function LoginForm({ redirectTo }: { redirectTo: string }) {
-  const router = useRouter();
+export function ForgotPasswordForm() {
   const [formError, setFormError] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
+  } = useForm<ForgotPasswordInput>({ resolver: zodResolver(forgotPasswordSchema) });
 
-  async function onSubmit(values: LoginInput) {
+  async function onSubmit({ email }: ForgotPasswordInput) {
     setFormError(null);
-    const { error } = await authClient.signIn.email(values);
+    // The email links to Better Auth, which checks the token and then redirects here with
+    // ?token=… (or ?error=INVALID_TOKEN).
+    const { error } = await authClient.requestPasswordReset({
+      email,
+      redirectTo: "/reset-password",
+    });
     if (error) {
       setFormError(getAuthErrorMessage(error));
       return;
     }
-    // replace (not push) so "Back" doesn't return to the login form; refresh so server
-    // components re-render with the new session.
-    router.replace(redirectTo);
-    router.refresh();
+    setSentTo(email);
+  }
+
+  if (sentTo) {
+    return (
+      <div className="grid gap-4">
+        <Alert>
+          <CheckCircle2 />
+          {/* Same message whether or not the address has an account, so this page can't be
+              used to find out who is registered. */}
+          <AlertDescription>
+            If an account exists for {sentTo}, we&apos;ve sent a link to reset your password. It
+            expires in 1 hour.
+          </AlertDescription>
+        </Alert>
+        <BackToLogin />
+      </div>
+    );
   }
 
   return (
@@ -59,34 +76,23 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
         />
       </FormField>
 
-      <FormField id="password" label="Password" error={errors.password?.message}>
-        <PasswordInput
-          id="password"
-          autoComplete="current-password"
-          aria-invalid={!!errors.password}
-          aria-describedby={errors.password ? "password-message" : undefined}
-          {...register("password")}
-        />
-      </FormField>
-
-      <Link
-        href="/forgot-password"
-        className="text-primary -mt-2 justify-self-end text-sm font-medium hover:underline"
-      >
-        Forgot password?
-      </Link>
-
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? <Loader2 className="animate-spin" aria-hidden /> : null}
-        {isSubmitting ? "Logging in…" : "Log in"}
+        {isSubmitting ? "Sending…" : "Send reset link"}
       </Button>
 
-      <p className="text-muted-foreground text-center text-sm">
-        Don&apos;t have an account?{" "}
-        <Link href="/register" className="text-primary font-medium hover:underline">
-          Create one
-        </Link>
-      </p>
+      <BackToLogin />
     </form>
+  );
+}
+
+function BackToLogin() {
+  return (
+    <p className="text-muted-foreground text-center text-sm">
+      Remembered it?{" "}
+      <Link href="/login" className="text-primary font-medium hover:underline">
+        Back to log in
+      </Link>
+    </p>
   );
 }

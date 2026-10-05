@@ -181,6 +181,7 @@ interviews, notes and reminders. Add an `ANTHROPIC_API_KEY` to `.env` to use the
 | `STORAGE_DRIVER` + `S3_*`                | prod on serverless | `local` or `s3` (R2/S3) for resume files                       |
 | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`   | optional           | Enables AI (default model `claude-opus-5-5`)                   |
 | `CRON_SECRET`                            | recommended        | Protects the daily reminders job                               |
+| `RESEND_API_KEY`, `EMAIL_FROM`           | optional           | Sends password reset emails (Resend)                           |
 | `TEST_DATABASE_URL`, `E2E_DATABASE_URL`  | for tests          | Separate databases for tests                                   |
 
 All variables are validated at startup by [`src/env.ts`](src/env.ts); see [`.env.example`](.env.example).
