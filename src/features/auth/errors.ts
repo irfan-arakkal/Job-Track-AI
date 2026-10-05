@@ -15,6 +15,10 @@ export function getAuthErrorMessage(error: { status?: number; code?: string; mes
     case "USER_ALREADY_EXISTS":
     case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
       return "An account with this email already exists. Try logging in instead.";
+    case "INVALID_TOKEN":
+      return "This reset link is invalid or has expired. Please request a new one.";
+    case "RESET_PASSWORD_DISABLED":
+      return "Password reset isn't available right now.";
     case "PASSWORD_TOO_SHORT":
     case "PASSWORD_TOO_LONG":
     case "INVALID_EMAIL":

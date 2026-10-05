@@ -1,43 +1,53 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 
 import { FormField } from "@/components/shared/form-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getAuthErrorMessage } from "@/features/auth/errors";
-import { registerSchema, type RegisterInput } from "@/features/auth/schemas";
+import { resetPasswordSchema, type ResetPasswordInput } from "@/features/auth/schemas";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth-rules";
 import { authClient } from "@/lib/auth-client";
 
-export function RegisterForm() {
-  const router = useRouter();
+export function ResetPasswordForm({ token }: { token: string }) {
   const [formError, setFormError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterInput>({ resolver: zodResolver(registerSchema) });
+  } = useForm<ResetPasswordInput>({ resolver: zodResolver(resetPasswordSchema) });
 
-  async function onSubmit({ name, email, password }: RegisterInput) {
+  async function onSubmit({ password }: ResetPasswordInput) {
     setFormError(null);
-    // confirmPassword is only a typo check; it never leaves the browser.
-    const { error } = await authClient.signUp.email({ name, email, password });
+    const { error } = await authClient.resetPassword({ newPassword: password, token });
     if (error) {
       setFormError(getAuthErrorMessage(error));
       return;
     }
-    toast.success("Welcome to JobTrack AI!");
-    router.replace("/dashboard");
-    router.refresh();
+    setDone(true);
+  }
+
+  if (done) {
+    return (
+      <div className="grid gap-4">
+        <Alert>
+          <CheckCircle2 />
+          <AlertDescription>
+            Your password has been changed and you&apos;ve been signed out on all devices.
+          </AlertDescription>
+        </Alert>
+        <Button asChild className="w-full">
+          <Link href="/login">Log in with your new password</Link>
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -49,32 +59,9 @@ export function RegisterForm() {
         </Alert>
       ) : null}
 
-      <FormField id="name" label="Name" error={errors.name?.message}>
-        <Input
-          id="name"
-          autoComplete="name"
-          placeholder="Ada Lovelace"
-          aria-invalid={!!errors.name}
-          aria-describedby={errors.name ? "name-message" : undefined}
-          {...register("name")}
-        />
-      </FormField>
-
-      <FormField id="email" label="Email" error={errors.email?.message}>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          placeholder="you@example.com"
-          aria-invalid={!!errors.email}
-          aria-describedby={errors.email ? "email-message" : undefined}
-          {...register("email")}
-        />
-      </FormField>
-
       <FormField
         id="password"
-        label="Password"
+        label="New password"
         error={errors.password?.message}
         hint={`At least ${PASSWORD_MIN_LENGTH} characters.`}
       >
@@ -89,7 +76,7 @@ export function RegisterForm() {
 
       <FormField
         id="confirmPassword"
-        label="Confirm password"
+        label="Confirm new password"
         error={errors.confirmPassword?.message}
       >
         <PasswordInput
@@ -103,15 +90,8 @@ export function RegisterForm() {
 
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? <Loader2 className="animate-spin" aria-hidden /> : null}
-        {isSubmitting ? "Creating account…" : "Create account"}
+        {isSubmitting ? "Saving…" : "Set new password"}
       </Button>
-
-      <p className="text-muted-foreground text-center text-sm">
-        Already have an account?{" "}
-        <Link href="/login" className="text-primary font-medium hover:underline">
-          Log in
-        </Link>
-      </p>
     </form>
   );
 }

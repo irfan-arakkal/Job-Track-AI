@@ -9,10 +9,45 @@ import { env } from "@/env";
 import { NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/lib/auth-rules";
 import { siteConfig } from "@/lib/site";
 import { db } from "@/server/db";
+import { isEmailConfigured, sendEmail } from "@/server/email";
 import { logger } from "@/server/logger";
 import { getStorage } from "@/server/storage";
 
 const ONE_DAY_SECONDS = 60 * 60 * 24;
+const ONE_HOUR_SECONDS = 60 * 60;
+
+const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+/** Emails a password reset link — or, in development without email set up, prints it. */
+async function sendResetPasswordEmail({
+  user,
+  url,
+}: {
+  user: { email: string; name: string };
+  url: string;
+}) {
+  if (!isEmailConfigured()) {
+    if (env.NODE_ENV !== "production") {
+      logger.info("Password reset link (email isn't configured, so it's printed here)", { url });
+    } else {
+      // The forgot-password page is hidden in this case; this only catches direct API calls.
+      logger.warn("Password reset requested, but email isn't configured");
+    }
+    return;
+  }
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: `Reset your ${siteConfig.name} password`,
+      text: `Hi ${user.name},\n\nSomeone (hopefully you) asked to reset your ${siteConfig.name} password. Open this link to choose a new one — it works once and expires in 1 hour:\n\n${url}\n\nIf you didn't ask for this, you can ignore this email; your password stays the same.`,
+      html: `<p>Hi ${escapeHtml(user.name)},</p><p>Someone (hopefully you) asked to reset your ${siteConfig.name} password. The link below works once and expires in 1 hour.</p><p><a href="${escapeHtml(url)}">Choose a new password</a></p><p>If you didn't ask for this, you can ignore this email; your password stays the same.</p>`,
+    });
+  } catch (error) {
+    // Don't surface this to the requester: the response must look the same whether or not the
+    // address has an account.
+    logger.error("Failed to send password reset email", { error });
+  }
+}
 
 /**
  * Better Auth configuration — the single source of truth for authentication.
@@ -63,6 +98,11 @@ export const auth = betterAuth({
     maxPasswordLength: PASSWORD_MAX_LENGTH,
     // Log the user in straight after registering (no email verification yet — see docs).
     autoSignIn: true,
+    // "Forgot password?": the link is single-use, expires after an hour, and using it signs the
+    // account out everywhere (in case someone else had the old password).
+    sendResetPassword: sendResetPasswordEmail,
+    resetPasswordTokenExpiresIn: ONE_HOUR_SECONDS,
+    revokeSessionsOnPasswordReset: true,
   },
 
   session: {
@@ -86,6 +126,8 @@ export const auth = betterAuth({
       "/sign-up/email": { window: 60, max: 3 },
       "/change-password": { window: 60, max: 5 },
       "/delete-user": { window: 60, max: 5 },
+      "/request-password-reset": { window: 60, max: 3 },
+      "/reset-password": { window: 60, max: 5 },
     },
   },
 
